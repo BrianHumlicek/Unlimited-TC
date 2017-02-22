@@ -1,0 +1,427 @@
+;-------------------------------------------------------------------------------
+
+[MegaTune]
+   MTversion      = 2.25 ; MegaTune itself; needs to match exec version.
+
+   versionInfo    = "S"  ; Put this in the title bar.
+   queryCommand   = "Q"  ; Verify against signature.
+   signature      = "Unlimited TC v0.4  " ; MS-II sends a null at 20th byte.
+                  ;  123456789.123456789.
+
+;-------------------------------------------------------------------------------
+
+[Constants]
+
+   ;----------------------------------------------------------------------------
+   ; Constants Definition
+   ; --------------------
+   ;
+   ; Scalar Values
+   ; -------------
+   ; The scaling and translation values are used as follows:
+   ;    msValue   = userValue / scale - translate
+   ;    userValue = (msValue + translate) * scale
+   ;
+   ; I've got no good way to handle a few of these things yet.
+   ;
+   ; Temperatures are fine, check out the Fielding IAC example (fastIdleTemp).
+   ;
+   ; The TPS stuff is a problem, because we have to modify the ini file for
+   ; each TPS installation and again whenever we move the TPS...  I figured
+   ; out a moderately palatable solution to presenting the frequency
+   ; divider in the boost control values, turn it into a bit field and then
+   ; enumerate the resulting frequencies.
+   ;
+   ; Array Values
+   ; ------------
+   ; Arrays are specified just like scalars, except that they have a "shape"
+   ; entry in the fourth parameter.  The shape allows you to define lists or
+   ; tables, for example [8] defines a list with eight values and [2x4] defines
+   ; a table with eight values (two rows and four columns).  Tables may be
+   ; stored in either "X-" or "Y-order."  X-order means that memory is layed
+   ; out like.
+   ;
+   ;     [x1,y1] [x2,y1]...[xn,y1] [x1,y2]...
+   ;
+   ; Y-order would be
+   ;
+   ;     [x1,y1] [x1,y2]...[x1,yn] [x2,y1]...
+   ;
+   ; To use the TableEditor, you must define two lists and a table, and
+   ; the lengths of the lists must correspond to the shape of the table.
+   ;
+   ; Bit Fields
+   ; ----------
+   ; Bits are numbered 0-7, the rightmost being bit zero.  The basic
+   ; data word that stores bit fields must be unsigned.
+   ;
+   ; You need NOT supply the correct number of labels matching the
+   ; number of bits you've specified (one bit requires 2 values, two
+   ; bits requires 4 values and so on).  If you neglect to supply enough
+   ; labels, they will be synthesized using the sequence "1", "2" and so
+   ; on based upon their position in the sequence (the cltType and matType
+   ; will end up with identical lists).
+   ;
+   ;----------------------------------------------------------------------------
+
+   pageActivationDelay =  50 ; Milliseconds delay after burn command.
+   blockReadTimeout    = 200 ; Milliseconds total timeout for reading page.
+
+   endianness      = big
+   nPages          = 1
+   pageSize        = 247
+;   pageIdentifier  = "\x00\x00",	"\x00\x04"
+;   burnCommand     = "b%2i",		"b%2i"
+;   pageReadCommand = "r%2i%2o%2c",	"r%2i%2o%2c"
+;   pageValueWrite  = "w%2i%2o%2c%v",	"w%2i%2o%2c%v"
+;   pageChunkWrite  = "w%2i%2o%2c%v",	"w%2i%2o%2c%v"
+   pageIdentifier  = "\x00\x00"
+   burnCommand     = "b%2i"
+   pageReadCommand = "r%2i%2o%2c"
+   pageValueWrite  = "w%2i%2o%2c%v"
+   pageChunkWrite  = "w%2i%2o%2c%v"
+
+   page = 1
+   ;  name            = class,  type, offset,      shape,  units,       scale, translate,    lo,      hi, digits
+      rev_limit_cut   = scalar,  U16,      0,           ,  "RPM",           1,         0,     0,   10000,      0
+      rev_limit_window= scalar,  U16,      2,           ,  "RPM",           1,         0,     0,   10000,      0
+      torque_limit_window= scalar,U16,     4,           ,  "RPM",           1,         0,     0,   10000,      0
+      rpm_teeth       = scalar,  U16,      6,           ,  "",              1,         0,     0,   65535,      0
+      oss_teeth       = scalar,  U16,      8,           ,  "",              1,         0,     0,   65535,      0
+      retard_time     = scalar,  U16,     10,           ,  "Seconds",0.001024,         0,     0,      10,      3
+      retard_off_time = scalar,  U16,     12,           ,  "Seconds",0.001024,         0,     0,      10,      3
+      OSS_Time_Time1  = array,   U16,     14,    [   30],  "Seconds",   0.001,         0,     0,      10,      3
+      OSS_Time_Time2  = array,   U16,     44,    [   15],  "Seconds",   0.001,         0,     0,      10,      3
+      OSS_Time_RPM1   = array,   U16,     74,    [   30],  "RPM",           1,         0,     0,   10000,      0
+      OSS_Time_RPM2   = array,   U16,    104,    [   15],  "RPM",           1,         0,     0,   10000,      0
+      OSS_Time_RPM3   = array,   U16,     74,    [   30],  "RPM",      3.8888,         0,     0,   10000,      0
+      OSS_Time_RPM4   = array,   U16,    104,    [   15],  "RPM",      3.8888,         0,     0,   10000,      0
+      tire_growth_RPM = array,   U16,    134,    [   10],  "RPM",           1,         0,     0,    2000,      0
+      tire_growth_pct = array,   U16,    154,    [   10],  "Percent",0.000030517578125,0,     0,       2,      4
+      target_slip_speed=array,   U16,    174,    [   15],  "ft/s",          1,         0,     0,     350,      0
+      target_slip_pct = array,   U16,    204,    [   15],  "percent",0.0009765625,     0,     0,      63,      3
+      tire_size       = scalar,  U16,    234,           ,  "Inches",0.00390625,        0,    50,     150,      2
+      g_factor        = scalar,  U16,    236,           ,  "ft/s/s",0.0009765625,      0,    25,      40,      3
+      rpm_LF          = scalar,  U16,    238,           ,  "Percent",0.000030517578125,0,     0,       2,      4
+      oss_LF          = scalar,  U16,    240,           ,  "Percent",0.000030517578125,0,     0,       2,      4
+      slip_LF         = scalar,  U16,    242,           ,  "Percent",0.000030517578125,0,     0,       2,      4
+      vnet_enable     = bits,    U08,    244,      [0:0], "Disabled", "Enabled"
+      standard_enable = bits,    U08,    245,      [0:0], "Disabled", "Enabled"
+      inertial_enable = bits,    U08,    246,      [0:0], "Disabled", "Enabled"
+
+[Menu]
+
+   ;----------------------------------------------------------------------------
+   ;  There are five pre-defined values that may be used to define your menus.
+   ;  The first four allow access to the "standard" dialog boxes, the last one
+   ;  merely draws a separator (horizontal line) in the menu.
+   ;
+   ;     std_constants
+   ;     std_enrichments
+   ;     std_realtime
+   ;     std_warmup
+   ;     std_accel
+   ;
+   ;     std_separator
+   ;
+   ;  Additionally, to support MegaSquirt-II firmware, there are two standard
+   ;  dialogs to generate its three embedded tables.  The first of these acts
+   ;  like Roger Enns' EasyTherm, but only works for MS-II.  The second one
+   ;  generates the internal AFR table required for proper closed loop operation
+   ;  in MS-II.  Use these without page numbers, as they will just be ignored
+   ;  in any case.
+   ;
+   ;     std_ms2gentherm
+   ;     std_ms2geno2
+   ;
+   ;  If you use any of the std_constants, std_enrichments or std_warmup
+   ;  editors, they may be optionally suffixed with a page number (only
+   ;  useful for multi-page code variants), which causes them to edit the
+   ;  specified page.  If you leave off the page specifier, they edit logical
+   ;  page one as specified in the Constants section.
+   ;
+   ;  There are four special menu names, which when used append to the standard
+   ;  menus of the same name instead of creating a new one.  The menu names
+   ;  are "File", "Communications", "Tools" and "Help".
+   ;
+   ;----------------------------------------------------------------------------
+
+   menu = "&Settings"
+      subMenu = generalSettings, "&General"
+   menu = "&Accel Management"
+      subMenu = Accel_Scalars, "Acceleration Parameters"
+      subMenu = WheelvsTIME1, "Wheel Speed vs. Time ONE"
+      subMenu = WheelvsTIME2, "Wheel Speed vs. Time TWO"
+      subMenu = OSSvsTIME1, "DS Speed vs. Time ONE"
+      subMenu = OSSvsTIME2, "DS Speed vs. Time TWO"
+      subMenu = tire_growth,"Wheel Speed vs. Growth"
+      subMenu = target_slip,"Inertial Speed vs. Tire Slip"
+ 
+;-------------------------------------------------------------------------------
+
+[UserDefined]
+
+   dialog = generalSettings, "General Settings"
+        topicHelp = gensettings_help
+	field = "#System"
+;        field = "Main REV limiter", rev_limit_cut
+;        field = "REV limiter hysterisis / window", rev_limit_window
+;        field = "TORQUE limit hysterisis / window", torque_limit_window
+	field = "IGN Pulses/Rev", rpm_teeth
+	field = "OSS Pulses/Rev", oss_teeth
+	field = "Tire Circumference", tire_size
+	field = "G Factor", g_factor
+	field = "RPM smoothing", rpm_LF
+	field = "OSS smoothing", oss_LF
+	field = "Slip smoothing", slip_LF
+        field = "vNet Switch", vnet_enable
+        field = "Wheel Speed Limiting Switch", standard_enable
+        field = "Inertial Limiting Switch", inertial_enable
+
+   dialog = Accel_Scalars, "Acceleration Parameters"	
+	topicHelp = accelscalars_help
+	field = "#System"
+        field = "Time to enable second retard", retard_time
+        field = "Time to disable retard limiting", retard_off_time
+
+help = gensettings_help, "General Settings Help"
+	text = "Main REV Limiter				This is an absolute engine RPM to<br>"
+	text = "					activate a torque limiting stratagy<br>"
+	text = "<br>"
+	text = "Main REV Limiter hystersis / window<br>"
+	text = "Torque Limit hystersis / window		This is the range of RPM the torque <br>"
+	text = "					limiting stratagy will use to determine<br>"
+	text = "					0 to 100 percent limiting<br>"
+	text = "<br>"
+	text = "IGN Pulses/Rev<br>"
+	text = "OSS Pulses/Rev				Number of teeth/pulses per revolution<br>"
+	text = "					of these inputs<br>"
+	text = "<br>"
+	text = "Tire Circumference				Base Tire circumference, is compensated by<br>"
+	text = "					Wheel Speed vs. Tire Growth<br>"
+	text = "<br>"
+	text = "G Factor					Base ft/s/s of 1 G.  Used to trim inertial<br>"
+	text = "					calculations (32.174 is standard)<br>"
+	text = "<br>"
+	text = "VNet Switch				Enable/Disable switch for the CAN BUS/vNet<br>"
+	text = "<br>"
+	text = "Inertial Limiting Switch			Enable/Disable switch for limiting<br>"
+	text = "					based on Inertial Speed vs. Tire Slip"
+
+
+help = accelscalars_help, "Acceleration Control Scalars"
+	text = "Time to enable second retard			This is the amount of time retard 1 must<br>"
+	text = "					be active to activate retard 2"
+;-------------------------------------------------------------------------------
+[CurveEditor]
+   curve = WheelvsTIME1, "Wheel Speed vs. Time ONE"
+      columnLabel = "Time", "Speed"
+      xAxis       =   0,    7, 8
+      yAxis       =   0, 2000, 10
+      xBins       = OSS_Time_Time1, run_timer
+      yBins       = OSS_Time_RPM1
+      gauge       = speedometer
+   curve = WheelvsTIME2, "Wheel Speed vs. Time TWO"
+      columnLabel = "Time", "Speed"
+      xAxis       =   1,    8, 8
+      yAxis       =   1000, 2000, 7
+      xBins       = OSS_Time_Time2, run_timer
+      yBins       = OSS_Time_RPM2
+      gauge       = speedometer
+   curve = OSSvsTIME1, "DS Speed vs. Time ONE"
+      columnLabel = "Time", "Speed"
+      xAxis       =   0,    7, 8
+      yAxis       =   0, 9000, 10
+      xBins       = OSS_Time_Time1, run_timer
+      yBins       = OSS_Time_RPM3
+      gauge       = shaft_rpm
+   curve = OSSvsTIME2, "DS Speed vs. Time TWO"
+      columnLabel = "Time", "Speed"
+      xAxis       =   1,    8, 8
+      yAxis       =   3000, 9000, 7
+      xBins       = OSS_Time_Time2, run_timer
+      yBins       = OSS_Time_RPM4
+      gauge       = shaft_rpm
+   curve = tire_growth, "Wheel Speed vs. Growth"
+      columnLabel = "Wheel Speed", "Growth"
+      xAxis       =   0, 2000, 8
+      yAxis       =   0, 2, 11
+      xBins       = tire_growth_RPM, oss
+      yBins       = tire_growth_pct
+      gauge       = speedometer
+   curve = target_slip, "Inertial Speed vs. Slip"
+      columnLabel = "Inertial Speed", "Tire Slip"
+      xAxis       =   0, 250, 8
+      yAxis       =   0, 4, 5
+      xBins       = target_slip_speed, int_velo
+      yBins       = target_slip_pct
+      gauge       = intvelo
+[TableEditor]
+
+;-------------------------------------------------------------------------------
+
+[GaugeConfigurations]
+
+   ;-------------------------------------------------------------------------------
+   ;  Notes on some of the gauges.
+   ;
+   ;  The accelEnrichGauge is now a composite of both acceleration enrichment
+   ;  and deceleration enleanment numbers.  See the definition of the variable
+   ;  accDecEnrich in the OutputChannels section.
+   ;
+   ;  David Hooke contributed the lambda gauge and associated transfer
+   ;  function files.
+   ;
+   ;  The lambda gauge is the best way (my opinion) to report data from a
+   ;  wide band EGO gauge, it standardizes the output irrespective of fuel
+   ;  or mix of fuels, so you needn't do any brainwork to know if your 75%
+   ;  gasoline and 25% methanol is rich at 10:1 or not.
+   ;
+   ;  Use the file WBlambda100AVR.inc, if using a standard ADC (e.g., AVR cpu).
+   ;  Use the file WBlambda100MOT.inc, if using a biased ADC (e.g., MOT cpu).
+   ;-------------------------------------------------------------------------------
+   ; Define a gauge's characteristics here, then go to a specific layout
+   ; block (Tuning or FrontPage) and use the name you've defined here to
+   ; display that gauge in a particular position.
+   ;
+   ; Name  = Case-sensitive, user-defined name for this gauge configuration.
+   ; Var   = Case-sensitive name of variable to be displayed, see the
+   ;         OutputChannels block in this file for possible values.
+   ; Title = Title displayed at the top of the gauge.
+   ; Units = Units displayed below value on gauge.
+   ; Lo    = Lower scale limit of gauge.
+   ; Hi    = Upper scale limit of gauge.
+   ; LoD   = Lower limit at which danger color is used for gauge background.
+   ; LoW   = Lower limit at which warning color is used.
+   ; HiW   = Upper limit at which warning color is used.
+   ; HiD   = Upper limit at which danger color is used.
+   ; vd    = Decimal places in displayed value
+   ; ld    = Label decimal places for display of Lo and Hi, above.
+
+   ;Name               Var            Title                 Units     Lo     Hi     LoD    LoW   HiW   HiD vd ld
+
+   clockGauge        = seconds,       "Clock",              "Seconds", 0, 65535,     -1,    -1,65536,65536, 0, 0
+   launchtime        = run_timer,     "Launch Timer",       "Seconds", 0,    15,     -1,    -1, 999,   999, 3, 0
+   deadGauge         = deadValue,     "---",                "",        0,     1,     -1,    -1,    2,    2, 0, 0
+   tachometer        = rpm,           "Engine Speed",       "RPM",     0,  9000,     -1,    -1, 8000, 8000, 0, 0
+   speedometer       = oss,           "Wheel Speed",        "RPM",     0,  2500,     -1,    -1, 2500, 2500, 0, 0
+   shaft_rpm         = driveshaft,    "Driveshaft Speed",   "RPM",     0,  9000,     -1,    -1, 8000, 8000, 0, 0
+   odometer          = oss_pulse_count,"OSS Odometer",      "COUNTS",  0, 65536,     -1,    -1,65536,65536, 0, 0
+   tachcount         = ign_pulse_count,"IGN Odometer",      "COUNTS",  0, 65536,     -1,    -1,65536,65536, 0, 0
+   REV_Limiting      = rev_limit_level,"REV Reduction",     "%",       0,     9,     -1,    -1,  999,  999, 0, 0
+   TQ_Limiting       = torque_limit_level,"Torque Reduction","%",      0,     9,     -1,    -1,  999,  999, 0, 0
+   OSS_Limit         = oss_limit_time,"Predicted OSS",     "RPM",      0,  9000,     -1,    -1, 8000, 8000, 0, 0
+   debug1            = dbg1,          "Debug INT1",        "INT",      0, 65535,     -1,    -1,65536,65536, 0, 0
+   debug2            = dbg2,          "Debug INT2",        "INT",      0, 65535,     -1,    -1,65536,65536, 0, 0
+   accelG            = accel_g,       "Horizontal Accelerometer","G's",-2,    2,     -4,    -1,    1,    4, 3, 3
+   vertG             = vert_g,        "Vertical Accelerometer","G's",-2,      2,     -4,    -1,    1,    4, 3, 3
+   intaccel          = int_accel,     "Integrated Acceleration","ft/s/s",-100,100,-1000, -1000, 1000, 1000, 1, 0
+   intvelo           = int_velo,      "Integrated Velocity","ft/s",    0,   250,  -1000, -1000, 1000, 1000, 3, 0
+   intposi           = int_pos,       "Integrated Position","ft",      0,  1500, -10000,-10000,10000,10000, 2, 0
+   tirespeed         = tire_speed,    "Tire surface speed","ft/s",     0,   250,  -1000, -1000, 1000, 1000, 3, 0
+   tireslip          = tire_slip,     "Tire slip",          "%",       0,     3,     -1,    -1,    4,    4, 3, 0
+   targetslip        = tire_slip_target,"Tire slip target", "%",       0,     3,     -1,    -1,    4,    4, 3, 0
+
+   Flags             = flag,          "FLAGS",             "INT",     0,    255,     -1,    -1,65536,65536, 0, 0
+
+;-------------------------------------------------------------------------------
+
+[FrontPage]
+   gauge1 = tachometer
+   gauge2 = REV_Limiting
+   gauge3 = TQ_Limiting
+   gauge4 = speedometer
+   gauge5 = clockGauge
+   gauge6 = launchtime
+   gauge7 = debug1
+   gauge8 = debug2
+   indicator = { retard_1              }, "RETARD 1 ON", "RETARD 1 OFF",    red, black, green, black
+   indicator = { retard_2              }, "RETARD 2 ON", "RETARD 2 OFF",    red, black, green, black
+
+
+;-------------------------------------------------------------------------------
+
+[RunTime]
+
+;-------------------------------------------------------------------------------
+
+[Tuning]
+;-------------------------------------------------------------------------------
+
+[AccelerationWizard]
+
+;-------------------------------------------------------------------------------
+
+[BurstMode]
+   getCommand       = "a\x00\x01"
+
+[OutputChannels]
+   deadValue        = { 0 } ; Convenient unchanging value.
+
+   ochBlockSize     = 47
+   ochGetCommand    = "a\x00\x01" ; Lower case so we don't get confused.
+
+   time             = { timeNow                                        }, "s"
+   seconds           = scalar, U16, 0, "s",     1.000, 0.0
+   run_timer         = scalar, U16, 2, "s",     0.001, 0.0
+   rpm               = scalar, U16, 4, "RPM",   1.000, 0.0
+   oss               = scalar, U16, 6, "RPM",   1.000, 0.0
+   rev_limit_level   = scalar, U16, 8, "level", 1.000, 0.0
+   torque_limit_level= scalar, U16,10, "level", 1.000, 0.0
+   oss_limit_time    = scalar, U16,12, "RPM",   1.000, 0.0
+   oss_pulse_count   = scalar, U16,14, "count", 1.000, 0.0
+   ign_pulse_count   = scalar, U16,16, "count", 1.000, 0.0
+   tire_slip         = scalar, U16,18, "Percent",0.0009765625, 0.0
+   tire_slip_target  = scalar, U16,20, "Percent",0.0009765625, 0.0
+   dbg1              = scalar, U16,22, "INT",   1.000, 0.0
+   dbg2              = scalar, U16,24, "INT",   1.000, 0.0
+   flag              = scalar, U08,26, "BITS",  1.000, 0.0
+   retard_1          = bits,   U08,26, [4:4]
+   retard_2          = bits,   U08 26, [5:5]
+   accel_g           = scalar, S16,27, "G's",   0.001, 0.0
+   vert_g            = scalar, S16,29, "G's",   0.001, 0.0
+   int_accel         = scalar, S32,31, "ft/s/s",0.1, 0.0
+   int_velo          = scalar, S32,35, "ft/s",  0.001, 0.0
+   int_pos           = scalar, S32,39, "ft",    0.001, 0.0
+   tire_speed        = scalar, S32,43, "ft/s",  0.001, 0.0
+;   int_accel         = {sqrt((accel_g * accel_g) + (vert_g * vert_g) - 1)}
+   driveshaft        = {oss * (35 / 9)}, "RPM"
+
+;-------------------------------------------------------------------------------
+
+[Datalog]
+   ; Full datalog.
+   ;
+   ; Default user-defined log emulates the full datalog.
+   ;
+   ; The entries are saved in the datalog file in the order in
+   ; which they appear in the list below.
+   ;
+   ;   Channel - Case sensitive name of output channel to be logged.
+   ;   Label   - String written to header line of log.  Be careful
+   ;             about changing these, as programs like MSLVV and
+   ;             MSTweak key off specific column names.
+   ;   Type    - Data type of output, converted before writing.
+   ;   Format  - C-style output format of data.
+   ;
+   ;       Channel          Label          Type    Format
+   ;       --------------   ----------     -----   ------
+   entry = time,              "Time",        float,  "%.3f"
+   entry = seconds,           "SecL",        int,    "%d"
+   entry = run_timer,         "Run_Timer",   float,  "%.3f"
+   entry = rpm,               "ENG RPM",     int,    "%d"
+   entry = oss,               "OSS RPM",     int,    "%d"
+   entry = driveshaft,        "SHAFT RPM",   int,    "%d"
+   entry = rev_limit_level,   "RPM_LIMIT",   int,    "%d"
+   entry = torque_limit_level,"TQ_LIMIT",    int,    "%d"
+   entry = oss_limit_time,    "OSS_limit",   int,    "%d"
+   entry = oss_pulse_count,   "OSS_counts",  int,    "%d"
+   entry = ign_pulse_count,   "IGN_counts",  int,    "%d"
+   entry = accel_g,           "ACCEL_HRZ",   int,    "%d"
+   entry = vert_g,            "ACCEL_VRT",   int,    "%d"
+   entry = int_accel,         "ACCEL_INT"    int,    "%d"
+   entry = flag,              "FLAGS",       int,    "%d"
+   entry = dbg1,              "DBG1",        int,    "%d"
+   entry = dbg2,              "DBG2",        int,    "%d"
+
+;-------------------------------------------------------------------------------
